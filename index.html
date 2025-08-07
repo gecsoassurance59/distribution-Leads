@@ -1,197 +1,222 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<title>Messagerie Slack-like</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  body {
-    margin: 0;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1a1d21;
-    color: white;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  #loginBox, #chatBox {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-  }
-  #loginBox {
-    margin-top: 15vh;
-  }
-  input, textarea, button {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 6px;
-    border: none;
-  }
-  button {
-    background-color: #7289da;
-    color: white;
-    cursor: pointer;
-  }
-  #messageList {
-    height: 60vh;
-    overflow-y: auto;
-    background-color: #2c2f33;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-  }
-  .message {
-    background: #3a3f44;
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-  }
-  .message .timestamp {
-    font-size: 0.75em;
-    color: #aaa;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slack Interne</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1e1f22;
+      font-family: "Segoe UI", sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #loginSection, #chatSection {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      width: 100%;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: #5865f2;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #chatSection {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #messages {
+      background: #2b2d31;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      height: 60vh;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      background: #3b3d42;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 5px;
+    }
+
+    .message .meta {
+      font-size: 0.75em;
+      color: #aaa;
+    }
+
+    #msgInputArea {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #okBtn {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-<div id="loginBox">
-  <h2>Connexion</h2>
-  <input id="ipInput" type="text" placeholder="Adresse IP" />
-  <input id="pwdInput" type="password" placeholder="Mot de passe" />
-  <button onclick="login()">Se connecter</button>
-  <p id="loginError" style="color: #f55;"></p>
-</div>
+  <div id="loginSection">
+    <h2>Connexion 🔐</h2>
+    <input type="text" id="ip" placeholder="Votre IP">
+    <input type="password" id="mdp" placeholder="Mot de passe">
+    <button onclick="login()">Se connecter</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
 
-<div id="chatBox" style="display:none;">
-  <h2>Messagerie</h2>
-  <div id="messageList">Chargement des messages...</div>
-  <textarea id="messageInput" rows="3" placeholder="Écrire un message..."></textarea>
-  <button id="sendBtn" onclick="sendMessage()">Envoyer</button>
-  <button id="okBtn" style="display:none;" onclick="sendOk()">OK</button>
-</div>
+  <div id="chatSection">
+    <h2>🟢 Messagerie interne</h2>
+    <div id="messages">Chargement...</div>
 
-<script>
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbzpDrbFI7i3imEkQHTbnkXl0Fdo822ewFBpy5uwwEhgoItrix2abkANL03gkOV2dkIO/exec";
+    <div id="msgInputArea">
+      <textarea id="msgInput" rows="3" placeholder="Votre message..."></textarea>
+      <button onclick="sendMessage()" id="sendBtn">Envoyer</button>
+      <button onclick="okAgent()" id="okBtn">OK</button>
+    </div>
+  </div>
 
-  let currentUser = { ip: "", role: "", nom: "" };
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwx3a6QkNHNNW3DvWkumcZ867BBsM7HueMJhZo1kD4xzaphYUh2w0nl8LWo3bFgwLyp/exec";
 
-  async function login() {
-    const ip = document.getElementById('ipInput').value.trim();
-    const pwd = document.getElementById('pwdInput').value.trim();
-    document.getElementById('loginError').textContent = '';
+    let currentUser = {
+      ip: "",
+      nom: "",
+      role: ""
+    };
 
-    if (!ip || !pwd) {
-      document.getElementById('loginError').textContent = "IP et mot de passe requis.";
-      return;
-    }
+    async function login() {
+      const ip = document.getElementById("ip").value.trim();
+      const mdp = document.getElementById("mdp").value.trim();
+      document.getElementById("loginError").textContent = "";
 
-    try {
-      const res = await fetch(scriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: "login", ip: ip, motdepasse: pwd })
-      });
-      const data = await res.json();
+      if (!ip || !mdp) {
+        document.getElementById("loginError").textContent = "Tous les champs sont requis.";
+        return;
+      }
 
-      if (data.success) {
-        currentUser = { ip: ip, role: data.role, nom: data.nom || ip };
-        document.getElementById('loginBox').style.display = 'none';
-        document.getElementById('chatBox').style.display = 'block';
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "login", ip: ip, motdepasse: mdp })
+        });
+        const data = await res.json();
 
-        if (currentUser.role === "agent") {
-          document.getElementById('messageInput').style.display = 'none';
-          document.getElementById('sendBtn').style.display = 'none';
-          document.getElementById('okBtn').style.display = 'inline-block';
+        if (data.success) {
+          currentUser = { ip: ip, nom: data.nom, role: data.role };
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("chatSection").style.display = "flex";
+
+          if (data.role === "agent") {
+            document.getElementById("msgInput").style.display = "none";
+            document.getElementById("sendBtn").style.display = "none";
+            document.getElementById("okBtn").style.display = "block";
+          }
+
+          loadMessages();
+          setInterval(loadMessages, 10000); // refresh every 10 seconds
         } else {
-          document.getElementById('messageInput').style.display = 'block';
-          document.getElementById('sendBtn').style.display = 'inline-block';
-          document.getElementById('okBtn').style.display = 'none';
+          document.getElementById("loginError").textContent = "IP ou mot de passe incorrect.";
         }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("loginError").textContent = "Erreur de connexion au serveur.";
+      }
+    }
+
+    async function loadMessages() {
+      try {
+        const res = await fetch(SCRIPT_URL + "?action=getMessages");
+        const data = await res.json();
+
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
+
+        if (Array.isArray(data.messages)) {
+          if (data.messages.length === 0) {
+            messagesDiv.innerHTML = "<i>Aucun message récent.</i>";
+          } else {
+            data.messages.forEach(msg => {
+              messagesDiv.innerHTML += `
+                <div class="message">
+                  <strong>${msg.nom || msg.ip} (${msg.role})</strong><br>
+                  ${msg.message}
+                  <div class="meta">${new Date(msg.timestamp).toLocaleString()}</div>
+                </div>
+              `;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Erreur de chargement des messages", err);
+        document.getElementById("messages").innerHTML = "<span style='color:red;'>Erreur de chargement.</span>";
+      }
+    }
+
+    async function sendMessage() {
+      const msg = document.getElementById("msgInput").value.trim();
+      if (!msg) return;
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "send",
+            ip: currentUser.ip,
+            nom: currentUser.nom,
+            role: currentUser.role,
+            message: msg
+          })
+        });
+
+        document.getElementById("msgInput").value = "";
         loadMessages();
-      } else {
-        document.getElementById('loginError').textContent = "IP ou mot de passe incorrect.";
+      } catch (err) {
+        alert("Erreur lors de l'envoi du message.");
+        console.error(err);
       }
-    } catch(e) {
-      document.getElementById('loginError').textContent = "Erreur de connexion au serveur.";
-      console.error(e);
     }
-  }
 
-  async function loadMessages() {
-    document.getElementById('messageList').textContent = "Chargement...";
-    try {
-      const res = await fetch(scriptUrl + "?action=getMessages");
-      const data = await res.json();
+    async function okAgent() {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "ok",
+            ip: currentUser.ip,
+            nom: currentUser.nom,
+            role: currentUser.role
+          })
+        });
 
-      if (Array.isArray(data.messages)) {
-        const messagesHtml = data.messages.map(m => {
-          return `<div class="message">
-            <strong>${m.nom || m.ip} (${m.role})</strong><br/>
-            ${m.message}<br/>
-            <small class="timestamp">${new Date(m.timestamp).toLocaleString()}</small>
-          </div>`;
-        }).join("");
-        document.getElementById('messageList').innerHTML = messagesHtml || "Aucun message.";
-      } else {
-        document.getElementById('messageList').textContent = "Erreur lors du chargement.";
+        document.getElementById("okBtn").disabled = true;
+        loadMessages();
+      } catch (err) {
+        alert("Erreur bouton OK.");
+        console.error(err);
       }
-    } catch(e) {
-      document.getElementById('messageList').textContent = "Erreur lors du chargement.";
-      console.error(e);
     }
-  }
-
-  async function sendMessage() {
-    const msg = document.getElementById('messageInput').value.trim();
-    if (!msg) return alert("Le message est vide.");
-
-    try {
-      await fetch(scriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: "send",
-          ip: currentUser.ip,
-          nom: currentUser.nom,
-          role: currentUser.role,
-          message: msg
-        })
-      });
-      document.getElementById('messageInput').value = "";
-      loadMessages();
-    } catch(e) {
-      alert("Erreur envoi message.");
-      console.error(e);
-    }
-  }
-
-  async function sendOk() {
-    try {
-      await fetch(scriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: "ok",
-          ip: currentUser.ip,
-          nom: currentUser.nom,
-          role: currentUser.role
-        })
-      });
-      document.getElementById('okBtn').disabled = true;
-      loadMessages();
-    } catch(e) {
-      alert("Erreur bouton OK.");
-      console.error(e);
-    }
-  }
-
-  // Rafraîchir les messages toutes les 10 secondes
-  setInterval(() => {
-    if(document.getElementById('chatBox').style.display === 'block') {
-      loadMessages();
-    }
-  }, 10000);
-</script>
+  </script>
 </body>
 </html>
