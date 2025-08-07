@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Slack-like Messagerie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #1a1d21;
+      color: white;
+      display: flex;
+      height: 100vh;
+    }
+
+    .app {
+      display: flex;
+      width: 100%;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: #2c2f33;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .sidebar li {
+      margin-bottom: 8px;
+    }
+
+    .chat {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      background-color: #23272a;
+      padding: 10px 20px;
+      border-bottom: 1px solid #444;
+    }
+
+    .chat-messages {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .message {
+      background-color: #3a3f44;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .message small {
+      color: #ccc;
+      font-size: 11px;
+      display: block;
+      margin-top: 5px;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 15px;
+      background-color: #23272a;
+      border-top: 1px solid #444;
+    }
+
+    .chat-input textarea {
+      flex-grow: 1;
+      resize: none;
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 14px;
+      background-color: #3a3f44;
+      color: white;
+    }
+
+    .chat-input button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      background-color: #7289da;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .chat-input button:disabled {
+      background-color: #444;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h2>👥 Utilisateurs</h2>
+      <ul id="user-list">
+        <li>Admin</li>
+        <li>Agent</li>
+        <li>Éditeur</li>
+      </ul>
+    </aside>
+
+    <main class="chat">
+      <header class="chat-header">
+        <h1>💬 Messagerie interne</h1>
+      </header>
+
+      <section id="messages" class="chat-messages">
+        Chargement des messages...
+      </section>
+
+      <footer class="chat-input">
+        <textarea id="messageInput" placeholder="Écrire un message... (désactivé pour agents)" disabled></textarea>
+        <button id="sendBtn" disabled>Envoyer</button>
+        <button id="okBtn" style="display:none;">OK</button>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    const sheetId = '1UkVTxT8hFlb3AK4t6sL6V8_wGiKs_xY5XpwJql5GKia5-95NMsuqwN5U';
+    const sheetName = 'utilisateurs';
+    const query = encodeURIComponent('SELECT B, E, F');
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${sheetName}&tq=${query}`;
+
+    fetch(url)
+      .then(res => res.text())
+      .then(rep => {
+        const data = JSON.parse(rep.substr(47).slice(0, -2));
+        const rows = data.table.rows;
+        const container = document.getElementById('messages');
+        container.innerHTML = '';
+
+        rows.forEach(row => {
+          const nom = row.c[0]?.v || 'Inconnu';
+          const message = row.c[1]?.v || '';
+          const timestamp = row.c[2]?.v || '';
+
+          const div = document.createElement('div');
+          div.className = 'message';
+          div.innerHTML = `<strong>${nom}</strong><br>${message}<small>${timestamp}</small>`;
+          container.appendChild(div);
+        });
+
+        // Afficher le bouton OK si l'utilisateur est agent (par défaut ici)
+        document.getElementById("okBtn").style.display = "inline-block";
+      })
+      .catch(err => {
+        document.getElementById('messages').innerText = 'Erreur lors du chargement des messages.';
+        console.error(err);
+      });
+
+    document.getElementById("okBtn").addEventListener("click", () => {
+      alert("Message reçu. (Suppression automatique à ajouter plus tard)");
+    });
+  </script>
+</body>
+</html>
